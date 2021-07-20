@@ -1,0 +1,42 @@
+---
+# ITAから項目名紐づけ表を取得
+- name: Get Itemname Table
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no=0000600002"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "3":
+        "LIST": [
+          "{{ _mainloop[4] }}"
+        ]
+  register: _result
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+# 一時変数宣言
+- name: Set Variable for _itemname_dict
+  set_fact:
+    _itemname_dict: {}
+  delegate_to: localhost
+
+# 取得したデータを辞書形式に成型
+- name: Set Itemname Forming
+  set_fact:
+    _itemname_dict: "{{ _itemname_dict | combine({item[4]| regex_replace('^.*(?<=/)'):item[5]}, recursive=True) }}"
+  when: ansible_loop.index > 1
+  loop: "{{ _result.json.resultdata.CONTENTS.BODY }}"
+  loop_control:
+    extended: yes
+  delegate_to: localhost
+

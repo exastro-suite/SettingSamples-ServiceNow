@@ -1,0 +1,34 @@
+---
+- block:
+  # nullは””に変換
+  - name: Change Null to Blank Text
+    set_fact:
+      _tmpdict_data: {
+        "name": "{{ _itadict.value }}"
+      }
+    delegate_to: localhost
+  when: _itadict.key == "名前"
+
+- block:
+  # nullは””に変換
+  - name: Change Null to Blank Text
+    set_fact:
+      _tmpdict_data: >-
+        {%- set tmpdict = {} -%}
+        {%- if _itadict.value -%}
+        {%-   set _ =  tmpdict.update({item.value: _itadict.value}) -%}
+        {%- else -%}
+        {%-   set _ =  tmpdict.update({item.value: ""}) -%}
+        {%- endif -%}
+        {{ tmpdict }}
+    when: item.key == _itadict.key
+    loop: "{{ _itemname_dict|dict2items  }}"
+    delegate_to: localhost
+  when: _itadict.key != "名前"
+
+# _registration_dataに_tmpdict_dataを追加
+- name: Add _tmpdict_data to _registration_data
+  set_fact:
+    _registration_data: "{{ _registration_data | combine(_tmpdict_data, recursive=True) }}"
+  delegate_to: localhost
+

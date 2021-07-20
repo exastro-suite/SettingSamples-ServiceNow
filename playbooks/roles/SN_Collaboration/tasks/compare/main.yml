@@ -1,0 +1,19 @@
+---
+# 現在時刻取得
+- name: Get _now_date
+  set_fact:
+    _now_date: '{{ lookup(''pipe'',''date "+%Y/%m/%d %H:%M"'') }}'
+  delegate_to: localhost
+
+# ITAの情報取得
+- name: Call get_ita_record.yml
+  include_tasks: ita/get_ita_record.yml
+
+# ServiceNowの情報取得
+- name: Call get_servicenow_record.yml
+  include_tasks: servicenow/get_servicenow_record.yml
+
+# 情報の突合
+- name: Call compare_record.yml
+  include_tasks: compare/compare_record.yml
+

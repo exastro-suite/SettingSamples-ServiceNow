@@ -1,0 +1,17 @@
+---
+# 環境変数作成
+- name: Call create_variable.yml
+  include_tasks: common/create_variable.yml
+
+# ループ対象を取得
+- name: Call get_menuid.yml
+  include_tasks: ita/get_menuid.yml
+
+# メインループ開始
+- name: Loop Start
+  include_tasks: compare/main.yml
+  loop: "{{ _tablename_result.json.resultdata.CONTENTS.BODY }}"
+  loop_control:
+    loop_var: _mainloop
+    extended: yes
+  when: ansible_loop.index > 1

@@ -1,0 +1,22 @@
+---
+# グローバル変数をローカル変数に変換
+- name: Set _delete_execute
+  set_fact:
+    _delete_execute: "{{ GBL_DELETE_EXECUTE }}"
+  delegate_to: localhost
+
+# ITAになくて、ServiceNowにあるやつは削除
+- name: Check ITA to Servicenow record
+  include_tasks: compare/existence_servicenow_to_ita.yml
+  loop: "{{ _find_register.record }}"
+  loop_control:
+    loop_var: _deleteloop
+  when: _delete_execute
+
+# ITAにあって、ServiceNowにないやつは追加
+# ITAにあって、ServiceNowにもあるやつは更新
+- name: Check ITA to Servicenow record
+  include_tasks: compare/existence_ita_to_servicenow.yml
+  loop: "{{ _ita_record_after }}"
+  loop_control:
+    loop_var: _compareloop

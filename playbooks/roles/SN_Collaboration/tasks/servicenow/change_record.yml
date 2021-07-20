@@ -1,0 +1,24 @@
+---
+# ServiceNowのレコード更新
+- name: Update Record 
+  servicenow.servicenow.snow_record:
+    username: "{{ VAR_servicenow_user }}"
+    password: "{{ VAR_servicenow_password}}"
+    instance: "{{ VAR_servicenow_instance }}"
+    table: "{{ _mainloop[5] }}"
+    state: present
+    data: "{{ _compareloop }}"
+    number: "{{ _compareloop.name }}"
+    lookup_field: name
+  register: _register
+  environment: 
+    - "{{ _environment }}"
+  delegate_to: localhost
+
+# 結果の確認
+- name: Call check_results.yml
+  include_tasks: common/check_results.yml
+  loop: "{{ _compareloop | dict2items }}"
+  loop_control:
+    loop_var: _regdict
+    extended: yes

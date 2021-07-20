@@ -1,0 +1,3 @@
+VAR_servicenow_user: ""
+VAR_servicenow_password: ""
+VAR_servicenow_instance: ""

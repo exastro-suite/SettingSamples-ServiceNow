@@ -1,0 +1,19 @@
+---
+# 一時変数用意
+- name: Set Variable for _registration_data
+  set_fact:
+    _registration_data: {}
+  delegate_to: localhost
+
+# 呼び出し
+- name: Call change_dictkey.yml
+  include_tasks: ita/change_dictkey.yml
+  loop: "{{ _itadict_outloop |dict2items }}"
+  loop_control:
+    loop_var: _itadict
+
+# 成型後データ入れ
+- name: Set Variable for _ita_record_after
+  set_fact:
+    _ita_record_after: "{{ _ita_record_after + [_registration_data] }}"
+  delegate_to: localhost
