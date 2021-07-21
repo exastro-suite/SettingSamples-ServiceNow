@@ -1,5 +1,4 @@
 # Setting samples ServiceNowモデル
-[English](README_en.md) | 日本語
 
 ## 概要
 
