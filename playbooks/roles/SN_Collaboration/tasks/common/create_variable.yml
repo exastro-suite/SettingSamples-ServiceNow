@@ -1,0 +1,30 @@
+---
+# グローバル変数をローカル変数に変換
+- name: Change Globalval to Localval
+  set_fact:
+    _curl_ca_bundle: "{{ GBL_CERTFLAG }}"
+  delegate_to: localhost
+
+# proxy設定
+- name: Set Proxy
+  set_fact:
+    _env_proxy:
+      http_proxy: "http://{{ GBL_PROXY }}/"
+      https_proxy: "http://{{ GBL_PROXY }}/"
+  when: GBL_PROXY
+  delegate_to: localhost
+
+# 証明書回避設定
+- name: Set CURL_CA_BUNDLE 
+  set_fact:
+    _env_curl_ca_bundle:
+      CURL_CA_BUNDLE: ""
+  when: _curl_ca_bundle
+  delegate_to: localhost
+
+# enviroment用にデータを成型
+- name: Data Unification
+  set_fact:
+    _environment:
+      "{{ _env_proxy | default({}) | combine(_env_curl_ca_bundle |default({}), recursive=True) }}"
+  delegate_to: localhost

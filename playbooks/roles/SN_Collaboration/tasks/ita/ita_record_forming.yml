@@ -1,0 +1,61 @@
+---
+# 同一ホスト名を排除
+- name: Sorting ITA data
+  set_fact:
+    _ita_itemlist: >-
+      {%- set tmplist = [] -%}
+      {%- set tmplist1 = [] -%}
+      {%- for valloop in _ita_record_before -%}
+      {%-   if loop.index > 1 -%}
+      {%-     set _ =  tmplist1.append(valloop) -%}
+      {%-   endif -%}
+      {%- endfor -%}
+      {%- for valloop2 in tmplist1 -%}
+      {%-   set tmplist2 = [] -%}
+      {%-   for valloop3 in tmplist1 -%}
+      {%-     if valloop2[3] == valloop3[3] -%}
+      {%-       set num = loop.index0 -%}
+      {%-     endif -%}
+      {%-   endfor -%}
+      {%-   set _ = tmplist.append(tmplist1[num]) -%}
+      {%- endfor -%}
+      {{ tmplist }}
+  delegate_to: localhost
+
+# 配列へ抜出し
+- name: Set _ita_itemlist
+  set_fact:
+    _ita_itemlist: >-
+      {%- set tmplist = [] -%}
+      {%- for valloop in _ita_record_before -%}
+      {%-   set tmplist2 = [] -%}
+      {%-   for val in valloop -%}
+      {%-     if loop.index == 4 or loop.index > 10 and loop.index < _ita_record_before[0] |length - 4 -%}
+      {%-       set _ =  tmplist2.append(val | regex_replace('^.*(?<=/)')) -%}
+      {%-     endif -%}
+      {%-   endfor -%}
+      {%-   set _ =  tmplist.append(tmplist2) -%}
+      {%- endfor -%}
+      {{ tmplist }}
+  delegate_to: localhost
+
+# 辞書形式に成型
+- name: Set _ita_itemval
+  set_fact:
+    _ita_itemdiclist: >-
+      {%- set tmplist = [] -%}
+      {%- for valloop in _ita_itemlist -%}
+      {%-   if loop.index > 1 -%}
+      {%-     set tmpdic = {} -%}
+      {%-     for val in valloop -%}
+      {%-       if loop.index == 1 -%}
+      {%-         set _ =  tmpdic.update( { "名前": val }) -%}
+      {%-       else -%}
+      {%-         set _ =  tmpdic.update( { _ita_itemlist[0][loop.index0]: val }) -%}
+      {%-       endif -%}
+      {%-     endfor -%}
+      {%-     set _ =  tmplist.append(tmpdic) -%}
+      {%-   endif -%}
+      {%- endfor -%}
+      {{ tmplist }}
+  delegate_to: localhost

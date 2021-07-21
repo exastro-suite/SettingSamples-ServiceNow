@@ -1,0 +1,24 @@
+---
+# 存在有無フラグ
+- name: Set existenceflag
+  set_fact:
+    _existenceflag: "False"
+  delegate_to: localhost
+
+# 存在した場合はフラグON
+- name: Compare ITA to ServiceNow
+  set_fact:
+    _existenceflag: "True"
+  when: item.name == _compareloop.name
+  loop: "{{ _find_register.record }}"
+  delegate_to: localhost
+
+# 追加処理呼び出し
+- name: Call add_record.yml
+  include_tasks: servicenow/add_record.yml
+  when: not _existenceflag
+
+# 更新処理呼び出し
+- name: Call change_record.yml
+  include_tasks: servicenow/change_record.yml
+  when: _existenceflag

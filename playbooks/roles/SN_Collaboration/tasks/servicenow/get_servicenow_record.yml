@@ -1,0 +1,16 @@
+---
+# ServiceNowのレコードを検索
+- name: Find Record
+  servicenow.servicenow.snow_record_find:
+    username: "{{ VAR_servicenow_user }}"
+    password: "{{ VAR_servicenow_password}}"
+    instance: "{{ VAR_servicenow_instance }}"
+    table: "{{ _mainloop[5] }}"
+    query:
+     AND:
+        equals:
+          active: "True"
+  register: _find_register
+  environment:
+    - "{{ _environment }}"
+  delegate_to: localhost

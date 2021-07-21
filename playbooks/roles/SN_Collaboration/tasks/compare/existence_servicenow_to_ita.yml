@@ -1,0 +1,19 @@
+---
+# 存在有無フラグ
+- name: Set existenceflag
+  set_fact:
+    _existenceflag: "False"
+  delegate_to: localhost
+
+# 存在した場合はフラグON
+- name: Compare ServiceNow to ITA
+  set_fact:
+    _existenceflag: "True"
+  when: item.name == _deleteloop.name
+  loop: "{{ _ita_record_after }}"
+  delegate_to: localhost
+
+# 削除処理呼び出し
+- name: Call delete_record.yml
+  include_tasks: servicenow/delete_record.yml
+  when: not _existenceflag

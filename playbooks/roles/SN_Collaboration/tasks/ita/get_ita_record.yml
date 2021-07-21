@@ -1,0 +1,61 @@
+---
+# 変数用意
+- name: Set Variable for get_ita_record
+  set_fact:
+    _ita_record_before: []
+    _ita_record_after: []
+    _menu_id: "{{ '%010d' | format( _mainloop[4] | int ) }}"
+  delegate_to: localhost
+
+# ITAから連携対象を取得
+- name: Get ITA record
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "6":
+        "RANGE": {
+          "START": "1900/04/01 00:00",
+          "END": "{{ _now_date }}"
+        }
+  register: _ita_record
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+- block:
+
+  # 連携対象を整理
+  - name: Call ita_record_sorting.yml
+    include_tasks: ita/ita_record_sorting.yml
+    loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY }}"
+    loop_control:
+      loop_var: _ita_record_loop
+      extended: yes
+
+  # 連携対象を辞書形式に変更
+  - name: Call ita_record_forming.yml
+    include_tasks: ita/ita_record_forming.yml
+
+  # ITAから項目名紐づけ表を取得
+  - name: Call get_itemname.yml
+    include_tasks: ita/get_itemname.yml
+
+  # 辞書形式にした連携対象のキーをServicenow用のキーに変更
+  - name: Call call_change_dictkey.yml
+    include_tasks: ita/call_change_dictkey.yml
+    loop: "{{ _ita_itemdiclist }}"
+    loop_control:
+      loop_var: _itadict_outloop
+
+  when: _ita_record.json.resultdata.CONTENTS.RECORD_LENGTH > 0

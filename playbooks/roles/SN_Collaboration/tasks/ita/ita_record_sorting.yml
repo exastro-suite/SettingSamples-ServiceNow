@@ -1,0 +1,25 @@
+---
+# 内部変数宣言
+- name: Set addflag and loopcount
+  set_fact:
+    addflag: "True"
+  delegate_to: localhost
+
+- name: Check Duplication
+  set_fact:
+    addflag: "False"
+  when:
+    - item[3] == _ita_record_loop[3]
+    - item[4] != _ita_record_loop[4]
+    - item[6] > _ita_record_loop[6] 
+  loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY }}"
+  loop_control:
+    extended: yes
+  delegate_to: localhost
+
+# 配列に追加
+- name: Add _ita_record_before
+  set_fact:
+    _ita_record_before: "{{ _ita_record_before + [_ita_record_loop] }}"
+  when: addflag
+  delegate_to: localhost
