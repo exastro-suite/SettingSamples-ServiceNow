@@ -7,7 +7,7 @@
     instance: "{{ VAR_servicenow_instance }}"
     table: "{{ _mainloop[5] }}"
     state: present
-    data: "{{ _compareloop }}"
+    data: "{{ _regdata }}"
   register: _register
   environment: 
     - "{{ _environment }}"
@@ -16,8 +16,15 @@
 # 結果の確認
 - name: Call check_results.yml
   include_tasks: common/check_results.yml
-  loop: "{{ _compareloop | dict2items }}"
+  loop: "{{ _regdata | dict2items }}"
   loop_control:
     loop_var: _regdict
     extended: yes
 
+# 名前-sys_id紐付け表にsys_idを登録
+- name: Call add_sys_id.yml
+  include_tasks: ita/add_sys_id.yml
+
+# 対象レコードにServiceNow最終連携日時を登録
+- name: Call change_cooperation_time.yml
+  include_tasks: ita/change_cooperation_time.yml

@@ -1,5 +1,5 @@
 ---
-# ITAから連携対象メニューを取得
+# ITAから連携対象のメニューIDを取得
 - name: Get MenuID = Tablename
   uri:
     url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no=0000600001"

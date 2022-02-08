@@ -1,0 +1,77 @@
+---
+# ITAから更新対象を取得
+- name: Get ITA record
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "2":
+        "LIST": [
+          "{{ _compareloop['No'] }}"
+        ]
+  register: _ita_record
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+# 取得したデータからレコード情報を抽出
+- name: Record pick up
+  set_fact:
+    _ita_record_from_exastro_body: "{{ _ita_record.json.resultdata.CONTENTS.BODY }}"
+  delegate_to: localhost
+
+# Body成型
+- name: Make body
+  set_fact:
+    _rest_body: >-
+      {%- set tmplist = [] -%}
+      {%- for valloop in _ita_record_from_exastro_body -%}
+      {%-   if loop.index > 1 -%}
+      {%-     set tmpdic = {} -%}
+      {%-     for val in valloop -%}
+      {%-       if loop.index0 == 0 -%}
+      {%-         set _ =  tmpdic.update( { loop.index0: "更新" }) -%}
+      {%-       elif 'sys_id' in _ita_record_from_exastro_body[0][loop.index0] -%}
+      {%-         set _ =  tmpdic.update( { loop.index0: _register.record['sys_id'] }) -%}
+      {%-       else -%}
+      {%-         set _ =  tmpdic.update( { loop.index0: val }) -%}
+      {%-       endif -%}
+      {%-     endfor -%}
+      {%-     set _ =  tmplist.append(tmpdic) -%}
+      {%-   endif -%}
+      {%- endfor -%}
+      {{ tmplist }}
+  delegate_to: localhost
+  
+
+# ITAの対象レコードを更新
+- name: Change ITA Record
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: EDIT
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "0":
+        "{{ item }}"
+  register: _ita_record
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+  loop: "{{ _rest_body }}"

@@ -3,6 +3,7 @@
 - name: Set Variable for _registration_data
   set_fact:
     _registration_data: {}
+    _tmpdict_data: {}
   delegate_to: localhost
 
 # 呼び出し

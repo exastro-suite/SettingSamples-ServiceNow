@@ -1,4 +1,10 @@
 ---
+# グローバル変数をローカル変数に変換
+- name: Set _regdata
+  set_fact:
+    _regdata: {}
+  delegate_to: localhost
+
 # 存在有無フラグ
 - name: Set existenceflag
   set_fact:
@@ -9,8 +15,17 @@
 - name: Compare ITA to ServiceNow
   set_fact:
     _existenceflag: "True"
-  when: item.name == _compareloop.name
+  when: item.sys_id == _compareloop.sys_id
   loop: "{{ _find_register.record }}"
+  delegate_to: localhost
+
+# _ita_record_after から Noを抜いたデータを作成
+# valueが空の場合も抜いておく
+- name: Set Registration Data
+  set_fact:
+    _regdata: "{{ _regdata | combine({item.key:item.value}, recursive=True) }}"
+  loop: "{{ _compareloop|dict2items  }}"
+  when: item.key != "No" and item.value and item.value != "None"
   delegate_to: localhost
 
 # 追加処理呼び出し

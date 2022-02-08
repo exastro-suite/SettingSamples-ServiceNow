@@ -9,7 +9,7 @@
 - name: Compare ServiceNow to ITA
   set_fact:
     _existenceflag: "True"
-  when: item.name == _deleteloop.name
+  when: item.sys_id == _deleteloop.sys_id
   loop: "{{ _ita_record_after }}"
   delegate_to: localhost
 
