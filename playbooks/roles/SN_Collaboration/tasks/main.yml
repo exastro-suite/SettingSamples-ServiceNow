@@ -3,7 +3,7 @@
 - name: Call create_variable.yml
   include_tasks: common/create_variable.yml
 
-# ループ対象を取得
+# 連携対象のメニューIDを取得
 - name: Call get_menuid.yml
   include_tasks: ita/get_menuid.yml
 

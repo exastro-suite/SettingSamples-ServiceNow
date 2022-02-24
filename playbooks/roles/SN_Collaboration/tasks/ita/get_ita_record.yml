@@ -4,7 +4,7 @@
   set_fact:
     _ita_record_before: []
     _ita_record_after: []
-    _menu_id: "{{ '%010d' | format( _mainloop[4] | int ) }}"
+    _menu_id: "{{ '%010d' | format( _mainloop[4] | int - 1 ) }}"
   delegate_to: localhost
 
 # ITAから連携対象を取得
@@ -23,7 +23,7 @@
     body:
       "1":
         "NORMAL": "0"
-      "6":
+      "7":
         "RANGE": {
           "START": "1900/04/01 00:00",
           "END": "{{ _now_date }}"
@@ -34,6 +34,15 @@
   delegate_to: localhost
 
 - block:
+  # 項目名_sys_idの配列番号取得
+  - name: Set _sys_id_num
+    set_fact:
+      _sys_id_num: "{{ ansible_loop.index0 }}"
+    loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY[0] }}"
+    loop_control:
+      extended: yes
+    when: "'sys_id' in item"
+    delegate_to: localhost
 
   # 連携対象を整理
   - name: Call ita_record_sorting.yml

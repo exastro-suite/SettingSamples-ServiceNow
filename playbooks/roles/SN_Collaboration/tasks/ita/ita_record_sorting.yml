@@ -1,16 +1,18 @@
 ---
-# 内部変数宣言
+# 登録用配列への追加フラグ宣言
 - name: Set addflag and loopcount
   set_fact:
     addflag: "True"
   delegate_to: localhost
 
+# sys_idが同じかつ基準日時が大きいやつが存在する場合
+# 登録用の配列に追加しない
 - name: Check Duplication
   set_fact:
     addflag: "False"
   when:
-    - item[3] == _ita_record_loop[3]
-    - item[4] != _ita_record_loop[4]
+    - _ita_record_loop[ _sys_id_num | int ]
+    - item[ _sys_id_num | int ] == _ita_record_loop[ _sys_id_num | int ]
     - item[6] > _ita_record_loop[6] 
   loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY }}"
   loop_control:

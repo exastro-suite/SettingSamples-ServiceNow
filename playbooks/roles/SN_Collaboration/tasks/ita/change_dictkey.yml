@@ -1,16 +1,32 @@
 ---
 - block:
-  # nullは””に変換
-  - name: Change Null to Blank Text
+  # ホスト名はそのまま登録
+  - name: Change dict from No
     set_fact:
       _tmpdict_data: {
-        "name": "{{ _itadict.value }}"
+        "No": "{{ _itadict.value }}"
       }
     delegate_to: localhost
-  when: _itadict.key == "名前"
+  when: _itadict.key == "No"
 
 - block:
-  # nullは””に変換
+  # sys_idはあればそのまま登録、なければキーから削除
+  - name: Change dict from sys_id
+    set_fact:
+      _tmpdict_data: >-
+        {%- set tmpdict = {} -%}
+        {%- if _itadict.value -%}
+        {%-   set _ =  tmpdict.update({"sys_id": _itadict.value}) -%}
+        {%- else -%}
+        {%-   set _ =  tmpdict.update({"sys_id": ""}) -%}
+        {%- endif -%}
+        {{ tmpdict }}
+    delegate_to: localhost
+  when: _itadict.key == "sys_id"
+
+- block:
+  # keyをservicenow形式へ変更
+  # valusのnullは””に変換し
   - name: Change Null to Blank Text
     set_fact:
       _tmpdict_data: >-
@@ -21,10 +37,11 @@
         {%-   set _ =  tmpdict.update({item.value: ""}) -%}
         {%- endif -%}
         {{ tmpdict }}
-    when: item.key == _itadict.key
+    when: item.key == _itadict.key 
     loop: "{{ _itemname_dict|dict2items  }}"
     delegate_to: localhost
-  when: _itadict.key != "名前"
+  when: _itadict.key != "sys_id"
+
 
 # _registration_dataに_tmpdict_dataを追加
 - name: Add _tmpdict_data to _registration_data
