@@ -30,11 +30,13 @@
     _itemname_dict: {}
   delegate_to: localhost
 
+# 「ID変換失敗」があったらエラー
 # 取得したデータを辞書形式に成型
 - name: Set Itemname Forming
   set_fact:
     _itemname_dict: "{{ _itemname_dict | combine({item[4]| regex_replace('^.*(?<=/)'):item[5]}, recursive=True) }}"
   when: ansible_loop.index > 1
+  failed_when: "'ID変換失敗' in item[4]"
   loop: "{{ _result.json.resultdata.CONTENTS.BODY }}"
   loop_control:
     extended: yes
