@@ -20,4 +20,10 @@
     no_proxy: "{{ __loginhostname__ }}"
   delegate_to: localhost
 
-
+# 「ID変換失敗」があったらエラー
+- name: Check MenuID = Tablename
+  fail:
+    msg: "連携対象メニューIDの取得に失敗しました。連携対象メニュー管理を確認してください。"
+  when: "'ID変換失敗' in item[3]"
+  loop: "{{ _tablename_result.json.resultdata.CONTENTS.BODY }}"
+  delegate_to: localhost
