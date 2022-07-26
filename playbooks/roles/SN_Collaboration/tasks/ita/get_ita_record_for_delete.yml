@@ -1,0 +1,46 @@
+---
+- name: Set _sys_id_list
+  set_fact:
+    _sys_id_list: []
+  delegate_to: localhost
+
+# ITAから連携対象を取得
+- name: Get ITA record for delete
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+  register: _ita_record_for_delete
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+- block:
+  # 項目名_sys_idの配列番号はget_ita_record.ymlで取得済
+  - name: Set _sys_id_list
+    set_fact:
+      _sys_id_list: >-
+        {%- set tmplist = [] -%}
+        {%- for valloop in _ita_record_for_delete.json.resultdata.CONTENTS.BODY -%}
+        {%-   if loop.index > 1 -%}
+        {%-     for val in valloop -%}
+        {%-       if loop.index0 == _sys_id_num|int -%}
+        {%-         set _ = tmplist.append(val) -%}
+        {%-       endif -%}
+        {%-     endfor -%}
+        {%-   endif -%}
+        {%- endfor -%}
+        {{ tmplist }}
+    delegate_to: localhost
+
+  when: _ita_record_for_delete.json.resultdata.CONTENTS.RECORD_LENGTH > 0

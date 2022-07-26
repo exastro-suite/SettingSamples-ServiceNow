@@ -1,0 +1,61 @@
+---
+# 未実行の場合に利用するフィルタ条件を設定
+- name: Set _filter_date initial value
+  set_fact:
+    _filter_date: '2015/04/01 10:00:00'
+  delegate_to: localhost
+
+# Conductor名取得
+- name: Get Conductor name
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no=2100180002"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "2":
+        "NORMAL": "600001"
+  register: _conductor_name
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+# Conductor作業一覧から正常終了した作業の終了日時を取得
+- name: Get End Datetime
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no=2100180006"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "3":
+        "NORMAL": "{{ _conductor_name.json.resultdata.CONTENTS.BODY[1][3] }}"
+      "6":
+        "NORMAL": "正常終了"
+  register: _conductor_record
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+# Conductor作業一覧に作業が存在したら終了日時を設定
+- name: set _filter_date Datetime
+  set_fact:
+    _filter_date: "{{ _conductor_record.json.resultdata.CONTENTS.BODY[1][11] }}"
+  when: _conductor_record.json.resultdata.CONTENTS.RECORD_LENGTH > 0
+  delegate_to: localhost

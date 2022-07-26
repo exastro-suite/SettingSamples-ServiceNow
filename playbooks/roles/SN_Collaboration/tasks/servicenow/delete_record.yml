@@ -1,22 +1,15 @@
 ---
 # ServiceNowのレコード削除
-- name: Delete Record
+- name: Delete Record 
   servicenow.servicenow.snow_record:
     username: "{{ VAR_servicenow_user }}"
-    password: "{{ VAR_servicenow_password }}"
+    password: "{{ VAR_servicenow_password}}"
     instance: "{{ VAR_servicenow_instance }}"
     table: "{{ _mainloop[5] }}"
     state: absent
-    number: "{{ _deleteloop.sys_id }}"
+    number: "{{ delete_val }}"
     lookup_field: sys_id
-  register: _register
+  register: result_async
   environment: 
     - "{{ _environment }}"
-  delegate_to: localhost
-
-# 結果の確認
-- name: Check Result
-  fail:
-    msg: "レコードの削除に失敗しました。 ServiceNow: {{ _deleteloop.name }}"
-  when: _register.record.status != "record deleted"
   delegate_to: localhost

@@ -5,20 +5,6 @@
     _regdata: {}
   delegate_to: localhost
 
-# 存在有無フラグ
-- name: Set existenceflag
-  set_fact:
-    _existenceflag: "False"
-  delegate_to: localhost
-
-# 存在した場合はフラグON
-- name: Compare ITA to ServiceNow
-  set_fact:
-    _existenceflag: "True"
-  when: item.sys_id == _compareloop.sys_id
-  loop: "{{ _find_register.record }}"
-  delegate_to: localhost
-
 # _ita_record_after から Noを抜いたデータを作成
 # valueが空の場合も抜いておく
 - name: Set Registration Data
@@ -28,12 +14,12 @@
   when: item.key != "No" and item.value and item.value != "None"
   delegate_to: localhost
 
-# 追加処理呼び出し
+# レコードにsys_idがないやつは追加
 - name: Call add_record.yml
   include_tasks: servicenow/add_record.yml
-  when: not _existenceflag
+  when: not _compareloop.sys_id
 
-# 更新処理呼び出し
+# レコードにsys_idがあるやつは更新
 - name: Call change_record.yml
   include_tasks: servicenow/change_record.yml
-  when: _existenceflag
+  when: _compareloop.sys_id

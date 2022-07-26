@@ -1,6 +1,6 @@
 ---
 # ITAから更新対象を取得
-- name: Get ITA record
+- name: Get ITA record for cooperation time
   uri:
     url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
     headers:

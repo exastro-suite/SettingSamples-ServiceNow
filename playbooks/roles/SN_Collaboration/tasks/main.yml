@@ -3,6 +3,10 @@
 - name: Call create_variable.yml
   include_tasks: common/create_variable.yml
 
+# Conductorの終了日時取得
+- name: Call get_conductor_enddatetime
+  include_tasks: ita/get_conductor_enddatetime.yml
+
 # 連携対象のメニューIDを取得
 - name: Call get_menuid.yml
   include_tasks: ita/get_menuid.yml

@@ -5,11 +5,13 @@
     username: "{{ VAR_servicenow_user }}"
     password: "{{ VAR_servicenow_password}}"
     instance: "{{ VAR_servicenow_instance }}"
+    max_records: "{{ GBL_MAX_RECORDS }}"
+    raise_on_empty: False 
     table: "{{ _mainloop[5] }}"
     query:
-     AND:
-        equals:
-          active: "True"
+      AND:
+        not_equals:
+          sys_id: ""
   register: _find_register
   environment:
     - "{{ _environment }}"

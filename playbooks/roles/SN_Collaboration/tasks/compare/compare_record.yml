@@ -1,20 +1,31 @@
 ---
-# グローバル変数をローカル変数に変換
+# グローバル変数をローカル変数に変換（削除フラグ）
 - name: Set _delete_execute
   set_fact:
     _delete_execute: "{{ GBL_DELETE_EXECUTE }}"
   delegate_to: localhost
 
-# ITAになくて、ServiceNowにあるやつは削除
-- name: Check ITA to Servicenow record
-  include_tasks: compare/existence_servicenow_to_ita.yml
-  loop: "{{ _find_register.record }}"
-  loop_control:
-    loop_var: _deleteloop
+# 削除フラグONの場合
+- block:
+  # ServiceNowの情報取得
+  - name: Call get_servicenow_record.yml
+    include_tasks: servicenow/get_servicenow_record.yml
+
+  # ITAのレコードを取得
+  - name: Call get_ita_record_for_delete.yml
+    include_tasks: ita/get_ita_record_for_delete.yml
+
+  # ServicenowにあってITAにないレコードをServicenowから削除
+  - name: Check Servicenow to ITA record
+    include_tasks: compare/existence_servicenow_to_ita.yml
+
   when: _delete_execute
 
-# ITAにあって、ServiceNowにないやつは追加
-# ITAにあって、ServiceNowにもあるやつは更新
+#追加/更新用のITAのレコードを取得
+- name: Call get_ita_record.yml
+  include_tasks: ita/get_ita_record.yml
+
+# ITAのレコードをServicenowへ追加/更新
 - name: Check ITA to Servicenow record
   include_tasks: compare/existence_ita_to_servicenow.yml
   loop: "{{ _ita_record_after }}"

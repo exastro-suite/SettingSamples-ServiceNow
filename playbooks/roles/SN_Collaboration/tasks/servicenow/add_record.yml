@@ -1,4 +1,9 @@
 ---
+# 紐付け表の有無判定に利用
+- name: Set _ref_menu_id
+  set_fact:
+    _ref_menu_id: "0"
+
 # ServiceNowへレコード追加
 - name: Add Record
   servicenow.servicenow.snow_record:
@@ -21,9 +26,19 @@
     loop_var: _regdict
     extended: yes
 
-# 名前-sys_id紐付け表にsys_idを登録
+# 紐付け表の有無確認
+- name: Call get_reference_menuid.yml
+  include_tasks: ita/get_reference_menuid.yml
+
+# 紐付け表のsys_idを登録
+- name: Call add_sys_id_for_reference.yml
+  include_tasks: ita/add_sys_id_for_reference.yml
+  when: _ref_menu_id != "0"
+
+# レコードにsys_idを登録
 - name: Call add_sys_id.yml
   include_tasks: ita/add_sys_id.yml
+  when: _ref_menu_id == "0"
 
 # 対象レコードにServiceNow最終連携日時を登録
 - name: Call change_cooperation_time.yml

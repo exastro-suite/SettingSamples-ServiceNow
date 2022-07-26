@@ -1,10 +1,17 @@
 ---
-# 変数用意
-- name: Set Variable for get_ita_record
+- name: Set _ita_record_after
   set_fact:
-    _ita_record_before: []
     _ita_record_after: []
-    _menu_id: "{{ '%010d' | format( _mainloop[4] | int - 1 ) }}"
+  delegate_to: localhost
+
+# REST用のbodyの作成
+- name: Set _body
+  set_fact:
+    _body: >-
+      {%- set tmpdict = {} -%}
+      {%- set _ =  tmpdict.update( { "1": { "NORMAL": "0" }}) -%}
+      {%- set _ =  tmpdict.update( { _lastupdate_num: { "RANGE" : { "START": _filter_date }}} ) -%}
+      {{ tmpdict }}
   delegate_to: localhost
 
 # ITAから連携対象を取得
@@ -20,51 +27,78 @@
     status_code: 200
     validate_certs: no
     body_format: json
-    body:
-      "1":
-        "NORMAL": "0"
-      "7":
-        "RANGE": {
-          "START": "1900/04/01 00:00",
-          "END": "{{ _now_date }}"
-        }
+    body: "{{ _body }}"
   register: _ita_record
   environment:
     no_proxy: "{{ __loginhostname__ }}"
   delegate_to: localhost
 
 - block:
-  # 項目名_sys_idの配列番号取得
-  - name: Set _sys_id_num
-    set_fact:
-      _sys_id_num: "{{ ansible_loop.index0 }}"
-    loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY[0] }}"
-    loop_control:
-      extended: yes
-    when: "'sys_id' in item"
-    delegate_to: localhost
-
-  # 連携対象を整理
-  - name: Call ita_record_sorting.yml
-    include_tasks: ita/ita_record_sorting.yml
-    loop: "{{ _ita_record.json.resultdata.CONTENTS.BODY }}"
-    loop_control:
-      loop_var: _ita_record_loop
-      extended: yes
-
-  # 連携対象を辞書形式に変更
-  - name: Call ita_record_forming.yml
-    include_tasks: ita/ita_record_forming.yml
-
   # ITAから項目名紐づけ表を取得
   - name: Call get_itemname.yml
     include_tasks: ita/get_itemname.yml
 
   # 辞書形式にした連携対象のキーをServicenow用のキーに変更
-  - name: Call call_change_dictkey.yml
-    include_tasks: ita/call_change_dictkey.yml
-    loop: "{{ _ita_itemdiclist }}"
-    loop_control:
-      loop_var: _itadict_outloop
+  # 配列へ抜出し
+  - name: Set _ita_tmpitemlist
+    set_fact:
+      _ita_tmpitemlist: >-
+        {%- set tmplist = [] -%}
+        {%- for valloop in _ita_record.json.resultdata.CONTENTS.BODY -%}
+        {%-   set tmplist2 = [] -%}
+        {%-   for val in valloop -%}
+        {%-     if loop.index == 3 or loop.index == 4 or loop.index > 10 and loop.index < _ita_record.json.resultdata.CONTENTS.BODY[0] |length - 4 -%}
+        {%-       set _ =  tmplist2.append(val) -%}
+        {%-     endif -%}
+        {%-   endfor -%}
+        {%-   set _ =  tmplist.append(tmplist2) -%}
+        {%- endfor -%}
+        {{ tmplist }}
+    delegate_to: localhost
+
+  # Key書き換え
+  - name: Set _ita_itemlist
+    set_fact:
+      _ita_itemlist: >-
+        {%- set tmplist = [] -%}
+        {%- for valloop in _ita_tmpitemlist -%}
+        {%-   set tmplist2 = [] -%}
+        {%-   if loop.index0 == 0 -%}
+        {%-     for val in valloop -%}
+        {%-       if val in _itemname_dict -%}
+        {%-         set _ =  tmplist2.append(_itemname_dict[val]) -%}
+        {%-       else -%}
+        {%-         set _ =  tmplist2.append(val) -%}
+        {%-       endif -%}
+        {%-     endfor -%}
+        {%-     set _ =  tmplist.append(tmplist2) -%}
+        {%-   else -%}
+        {%-     set _ =  tmplist.append(valloop) -%}
+        {%-   endif -%}
+        {%- endfor -%}
+        {{ tmplist }}
+    delegate_to: localhost
+
+  - name: Set _ita_itemval
+    set_fact:
+      _ita_record_after: >-
+        {%- set tmplist = [] -%}
+        {%- for valloop in _ita_itemlist -%}
+        {%-   if loop.index > 1 -%}
+        {%-     set tmpdic = {} -%}
+        {%-     for val in valloop -%}
+        {%-       if "パラメータ" not in _ita_itemlist[0][loop.index0] and "ホスト名" not in _ita_itemlist[0][loop.index0] and  "代入順序" not in _ita_itemlist[0][loop.index0]-%}
+        {%-         if val -%}
+        {%-           set _ =  tmpdic.update( { _ita_itemlist[0][loop.index0]: val }) -%}
+        {%-         else -%}
+        {%-           set _ =  tmpdic.update( { _ita_itemlist[0][loop.index0]: "" }) -%}
+        {%-         endif -%}
+        {%-       endif -%}
+        {%-     endfor -%}
+        {%-     set _ =  tmplist.append(tmpdic) -%}
+        {%-   endif -%}
+        {%- endfor -%}
+        {{ tmplist }}
+    delegate_to: localhost
 
   when: _ita_record.json.resultdata.CONTENTS.RECORD_LENGTH > 0

@@ -1,0 +1,44 @@
+---
+# 代入値自動登録用のメニューIDを入力用のメニューIDに変更
+- name: Set _menu_id
+  set_fact:
+    _menu_id: "{{ '%010d' | format( _mainloop[4] | int - 1 ) }}"
+  delegate_to: localhost
+
+# 対象メニューの項目名を取得
+- name: Get Item Name
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no={{ _menu_id }}"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: INFO
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+  register: _info_register
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+# 項目名：最終更新日時の配列番号取得
+- name: Set _lastupdate_num
+  set_fact:
+    _lastupdate_num: "{{ ansible_loop.index0 }}"
+  loop: "{{ _info_register.json.resultdata.CONTENTS.INFO }}"
+  loop_control:
+    extended: yes
+  when: "'最終更新日時' == item"
+  delegate_to: localhost
+
+# 項目名：sys_idの配列番号取得
+- name: Set _sys_id_num
+  set_fact:
+    _sys_id_num: "{{ ansible_loop.index0 }}"
+  loop: "{{ _info_register.json.resultdata.CONTENTS.INFO }}"
+  loop_control:
+    extended: yes
+  when: "'パラメータ/sys_id' == item"
+  delegate_to: localhost
