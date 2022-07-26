@@ -1,0 +1,30 @@
+---
+# メニューIDから参照元の紐付け表を抽出
+- name: Get reference MenuID
+  uri:
+    url: "https://{{ __loginhostname__ }}/default/menu/07_rest_api_ver1.php?no=0000600003"
+    headers:
+      Host: "{{ __loginhostname__ }}:443"
+      Content-type: "application/json"
+      Authorization: "{{ GBL_AUTHORIZATION }}"
+      X-Command: FILTER_DATAONLY
+    method: POST
+    status_code: 200
+    validate_certs: no
+    body_format: json
+    body:
+      "1":
+        "NORMAL": "0"
+      "4":
+        "LIST": [
+          "{{ _mainloop[4] | int - 1 }}"
+        ]
+  register: _menuid_result
+  environment:
+    no_proxy: "{{ __loginhostname__ }}"
+  delegate_to: localhost
+
+- name: set _ref_menu_id
+  set_fact:
+    _ref_menu_id: "{{ '%010d' | format( _menuid_result.json.resultdata.CONTENTS.BODY[0][6] | int ) }}"
+  when: _menuid_result.json.resultdata.CONTENTS.RECORD_LENGTH > 0

@@ -1,44 +1,21 @@
 ---
-# 項目名が「メーカー」の場合
+# 参照の場合
 - block:
-  - name: Get sys_id
-    servicenow.servicenow.snow_record_find:
-      username: "{{ VAR_servicenow_user }}"
-      password: "{{ VAR_servicenow_password}}"
-      instance: "{{ VAR_servicenow_instance }}"
-      table: "core_company"
-      query:
-        name: "{{ _regdict.value }}"
-    register: _sys_id
-    environment:
-      - "{{ _environment }}"
-    when: _regdict.value
-    delegate_to: localhost
-
-  # 項目が空の場合、_sys_idを空で上書き
-  - name: Set sys_id
-    set_fact:
-      _sys_id: 
-        record:
-          - sys_id: ""
-    when: not _regdict.value
-    delegate_to: localhost
-
   # 結果の比較
-  - name: Check manufacturer
+  - name: Check Result for link
     fail:
-      msg: "レコードの登録に失敗しました。 ServiceNow: {{ _register.record.manufacturer.value  | default('') }}  ITA: {{ _sys_id.record[0].sys_id  | default('') }} "
-    when: _register.record.manufacturer.value | default('') != _sys_id.record[0].sys_id | default('')
+      msg: "レコードの登録に失敗しました。 ServiceNow: {{  _register.record[_regdict.key].value }} ITA: {{ _regdict.value }}"
+    when: _register.record[_regdict.key].value | string != _regdict.value | string
     delegate_to: localhost
 
-  when: _regdict.key == "manufacturer"
+  when: "'value' in _register.record[_regdict.key]"
 
-# 項目名が上記以外の場合
 - block:
   # 結果の比較
-  - name: Check Result
+  - name: Check Result for value
     fail:
       msg: "レコードの登録に失敗しました。 ServiceNow: {{  _register.record[_regdict.key] }} ITA: {{ _regdict.value }}"
     when: _register.record[_regdict.key] | string != _regdict.value | string
     delegate_to: localhost
-  when: _regdict.key != "manufacturer"
+
+  when: "'value' not in _register.record[_regdict.key]"

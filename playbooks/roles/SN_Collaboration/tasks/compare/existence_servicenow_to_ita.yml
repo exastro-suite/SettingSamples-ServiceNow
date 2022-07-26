@@ -1,19 +1,21 @@
 ---
-# 存在有無フラグ
-- name: Set existenceflag
+# 存在しない対象の抜出
+- name: Compare ServiceNow to ITA 
   set_fact:
-    _existenceflag: "False"
+    _deletelist: >-
+      {%- set tmplist = [] -%}
+      {%- for valloop in _find_register.record -%}
+      {%-   if valloop['sys_id'] not in _sys_id_list -%}
+      {%-     set _ = tmplist.append(valloop['sys_id']) -%}
+      {%-   endif -%}
+      {%- endfor -%}
+      {{ tmplist }}
   delegate_to: localhost
-
-# 存在した場合はフラグON
-- name: Compare ServiceNow to ITA
-  set_fact:
-    _existenceflag: "True"
-  when: item.sys_id == _deleteloop.sys_id
-  loop: "{{ _ita_record_after }}"
-  delegate_to: localhost
-
+ 
 # 削除処理呼び出し
 - name: Call delete_record.yml
   include_tasks: servicenow/delete_record.yml
-  when: not _existenceflag
+  loop: "{{ _deletelist }}"
+  loop_control:
+    loop_var: delete_val
+  when: _deletelist | length > 0
